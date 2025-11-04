@@ -1,0 +1,256 @@
+-- DELTA MONSTERCAT PLAYLIST v3.0 (WITH GUI + ENDLESS LOOP + GAME MUTE)
+-- Your 11 bangers | Auto-next | Loop forever | Mute game sounds
+-- Paste in Delta Executor → Execute → Vibe in silence
+local player = game.Players.LocalPlayer
+local camera = workspace.CurrentCamera
+local soundService = game:GetService("SoundService")
+local tweenService = game:GetService("TweenService")
+-- === PLAYLIST (YOUR EXACT ORDER) ===
+local playlist = {
+    {id = "5410084188", name = "WRLD - Hang Up (feat. Savoi)"},
+    {id = "5409360995", name = "Dion Timmer - Shiawase"},
+    {id = "5410080926", name = "Protostar - Galaxies"},
+    {id = "5410081112", name = "PIXL - Galactic Voyage"},
+    {id = "5410084006", name = "Tony Romera & SQWAD - St Tropez"},
+    {id = "5410081404", name = "Ephixa & Going Quantum - Let's Roll"},
+    {id = "5410084870", name = "Dion Timmer - Internet Boy"},
+    {id = "5410086789", name = "CloudNone - Blue to Blue"},
+    {id = "5410085296", name = "Jay Cosmic - Ocean Eyes"},
+    {id = "5410082407", name = "CloudNone - 3HOURS"},
+    {id = "5410084426", name = "Feint feat. Elizaveta - Drifters"},
+}
+-- === GUI SETUP ===
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "DeltaMusicPlayer"
+screenGui.Parent = player:WaitForChild("PlayerGui")
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 380, 0, 160)
+frame.Position = UDim2.new(0.5, -190, 0.1, 0)
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+-- Title
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -30, 0, 30)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
+title.Text = " MONSTERCAT PLAYER"
+title.TextColor3 = Color3.fromRGB(0, 255, 200)
+title.Font = Enum.Font.GothamBold
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = frame
+-- Close Button
+local close = Instance.new("TextButton")
+close.Size = UDim2.new(0, 30, 0, 30)
+close.Position = UDim2.new(1, -30, 0, 0)
+close.BackgroundColor3 = Color3.fromRGB(255, 50, 50)
+close.Text = "X"
+close.TextColor3 = Color3.new(1,1,1)
+close.Font = Enum.Font.GothamBold
+close.Parent = frame
+-- Song Name
+local songLabel = Instance.new("TextLabel")
+songLabel.Size = UDim2.new(1, -20, 0, 30)
+songLabel.Position = UDim2.new(0, 10, 0, 35)
+songLabel.BackgroundTransparency = 1
+songLabel.Text = "Loading..."
+songLabel.TextColor3 = Color3.new(1,1,1)
+songLabel.Font = Enum.Font.Gotham
+songLabel.TextXAlignment = Enum.TextXAlignment.Left
+songLabel.Parent = frame
+-- Progress Bar
+local progressBg = Instance.new("Frame")
+progressBg.Size = UDim2.new(1, -20, 0, 8)
+progressBg.Position = UDim2.new(0, 10, 0, 70)
+progressBg.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+progressBg.BorderSizePixel = 0
+progressBg.Parent = frame
+local progressFill = Instance.new("Frame")
+progressFill.Size = UDim2.new(0, 0, 1, 0)
+progressFill.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
+progressFill.BorderSizePixel = 0
+progressFill.Parent = progressBg
+-- Time Labels
+local timeLabel = Instance.new("TextLabel")
+timeLabel.Size = UDim2.new(1, -20, 0, 20)
+timeLabel.Position = UDim2.new(0, 10, 0, 80)
+timeLabel.BackgroundTransparency = 1
+timeLabel.Text = "0:00 / 0:00"
+timeLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+timeLabel.Font = Enum.Font.Gotham
+timeLabel.Parent = frame
+-- Control Buttons
+local prevBtn = Instance.new("TextButton")
+prevBtn.Size = UDim2.new(0, 40, 0, 40)
+prevBtn.Position = UDim2.new(0, 20, 1, -60)
+prevBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+prevBtn.Text = "◄◄"
+prevBtn.TextColor3 = Color3.new(1,1,1)
+prevBtn.Font = Enum.Font.GothamBold
+prevBtn.Parent = frame
+local playBtn = Instance.new("TextButton")
+playBtn.Size = UDim2.new(0, 50, 0, 50)
+playBtn.Position = UDim2.new(0, 70, 1, -65)
+playBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 150)
+playBtn.Text = "▶"
+playBtn.TextColor3 = Color3.new(0,0,0)
+playBtn.Font = Enum.Font.GothamBold
+playBtn.Parent = frame
+local nextBtn = Instance.new("TextButton")
+nextBtn.Size = UDim2.new(0, 40, 0, 40)
+nextBtn.Position = UDim2.new(0, 130, 1, -60)
+nextBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+nextBtn.Text = "►►"
+nextBtn.TextColor3 = Color3.new(1,1,1)
+nextBtn.Font = Enum.Font.GothamBold
+nextBtn.Parent = frame
+-- Volume Slider
+local volLabel = Instance.new("TextLabel")
+volLabel.Size = UDim2.new(0, 50, 0, 20)
+volLabel.Position = UDim2.new(0, 190, 1, -45)
+volLabel.BackgroundTransparency = 1
+volLabel.Text = "VOL:"
+volLabel.TextColor3 = Color3.new(1,1,1)
+volLabel.Font = Enum.Font.Gotham
+volLabel.Parent = frame
+local volSlider = Instance.new("TextButton")
+volSlider.Size = UDim2.new(0, 100, 0, 10)
+volSlider.Position = UDim2.new(0, 240, 1, -40)
+volSlider.BackgroundColor3 = Color3.fromRGB(70, 70, 80)
+volSlider.Text = ""
+volSlider.Parent = frame
+local volFill = Instance.new("Frame")
+volFill.Size = UDim2.new(0.7, 0, 1, 0)
+volFill.BackgroundColor3 = Color3.fromRGB(0, 255, 200)
+volFill.Parent = volSlider
+-- Mute Game Toggle
+local muteToggle = Instance.new("TextButton")
+muteToggle.Size = UDim2.new(0, 80, 0, 25)
+muteToggle.Position = UDim2.new(1, -100, 1, -35)
+muteToggle.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+muteToggle.Text = "MUTE ON"
+muteToggle.TextColor3 = Color3.new(1,1,1)
+muteToggle.Font = Enum.Font.GothamBold
+muteToggle.Parent = frame
+-- === MUSIC SYSTEM ===
+local mySound = Instance.new("Sound")
+mySound.Name = "DeltaSong"
+mySound.Looped = false
+mySound.Volume = 0.7
+mySound.Parent = screenGui
+local index = 1
+local isPlaying = false
+local muteGame = true
+local function updateSong()
+    local song = playlist[index]
+    songLabel.Text = song.name
+    mySound.SoundId = "rbxassetid://" .. song.id
+    if isPlaying then
+        mySound:Play()
+    end
+end
+local function play()
+    isPlaying = true
+    playBtn.Text = "❚❚"
+    playBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    updateSong()
+end
+local function pause()
+    isPlaying = false
+    playBtn.Text = "▶"
+    playBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 150)
+    mySound:Pause()
+end
+local function nextSong()
+    index = index + 1
+    if index > #playlist then index = 1 end
+    play()
+end
+local function prevSong()
+    index = index - 1
+    if index < 1 then index = #playlist end
+    play()
+end
+-- === EVENT CONNECTIONS ===
+close.MouseButton1Click:Connect(function()
+    screenGui:Destroy()
+    mySound:Stop()
+end)
+playBtn.MouseButton1Click:Connect(function()
+    if isPlaying then pause() else play() end
+end)
+nextBtn.MouseButton1Click:Connect(nextSong)
+prevBtn.MouseButton1Click:Connect(prevSong)
+mySound.Ended:Connect(function()
+    nextSong()
+end)
+-- Volume Slider
+local dragging = false
+volSlider.MouseButton1Down:Connect(function()
+    dragging = true
+end)
+game:GetService("UserInputService").InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+game:GetService("RunService").RenderStepped:Connect(function()
+    if dragging then
+        local mouse = player:GetMouse()
+        local relX = math.clamp((mouse.X - volSlider.AbsolutePosition.X) / volSlider.AbsoluteSize.X, 0, 1)
+        volFill.Size = UDim2.new(relX, 0, 1, 0)
+        mySound.Volume = relX
+    end
+end)
+-- Mute Toggle
+muteToggle.MouseButton1Click:Connect(function()
+    muteGame = not muteGame
+    if muteGame then
+        muteToggle.Text = "MUTE ON"
+        muteToggle.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    else
+        muteToggle.Text = "MUTE OFF"
+        muteToggle.BackgroundColor3 = Color3.fromRGB(100, 255, 100)
+    end
+end)
+-- === GAME MUTE LOOP ===
+spawn(function()
+    while screenGui.Parent do
+        if muteGame then
+            for _, s in pairs(workspace:GetDescendants()) do
+                if s:IsA("Sound") and s ~= mySound then
+                    s.Volume = 0
+                end
+            end
+            for _, s in pairs(soundService:GetDescendants()) do
+                if s:IsA("Sound") and s ~= mySound then
+                    s.Volume = 0
+                end
+            end
+        end
+        task.wait(1)
+    end
+end)
+-- === PROGRESS BAR UPDATE ===
+spawn(function()
+    while screenGui.Parent do
+        if mySound.IsPlaying and mySound.TimeLength > 0 then
+            local progress = mySound.TimePosition / mySound.TimeLength
+            progressFill.Size = UDim2.new(progress, 0, 1, 0)
+            local curr = string.format("%d:%02d", math.floor(mySound.TimePosition / 60), math.floor(mySound.TimePosition % 60))
+            local total = string.format("%d:%02d", math.floor(mySound.TimeLength / 60), math.floor(mySound.TimeLength % 60))
+            timeLabel.Text = curr .. " / " .. total
+        else
+            progressFill.Size = UDim2.new(0, 0, 1, 0)
+            timeLabel.Text = "0:00 / 0:00"
+        end
+        task.wait(0.1)
+    end
+end)
+-- === START ===
+play()
+print("DELTA MONSTERCAT PLAYER LOADED")
+print(" Drag GUI | Click X to close | MUTE ON = game silent")
+print(" Enjoy your private rave!")
